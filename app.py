@@ -392,7 +392,8 @@ with st.sidebar:
 
     uploaded = {
         "employees":  st.file_uploader("employees_master.csv",         type="csv", key="emp"),
-        "pipeline":   st.file_uploader("succession_pipeline.csv",      type="csv", key="pip"),
+        # "pipeline" will now be auto-generated
+        "pipeline":   None,
         "kfalp":      st.file_uploader("kf_kfalp_detail.csv",          type="csv", key="kfl"),
         "viaedge":    st.file_uploader("kf_viaedge_detail.csv",        type="csv", key="via"),
         "ref":        st.file_uploader("kf_attribute_reference.csv",   type="csv", key="ref"),
@@ -485,6 +486,74 @@ def recompute_lps(df, w1, w2, w3, w4, w5):
     df["C3"] = c3.round(2); df["C4"] = c4.round(2); df["C5"] = c5.round(2)
     return df
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+# AUTO GENERATE SUCCESSION PIPELINE
+# ─────────────────────────────────────────────────────────────────────────────
+def generate_succession_pipeline(df_emp, df_org=None):
+    """
+    Automatically generate succession pipeline from employee data.
+    """
+
+    critical_roles = []
+
+    # Use org structure critical roles if available
+    if df_org is not None and "Is Critical Role" in df_org.columns:
+        critical_roles = (
+            df_org[df_org["Is Critical Role"] == True]["Job Title"]
+            .dropna()
+            .unique()
+            .tolist()
+        )
+
+    # Fallback: use higher grades
+    if len(critical_roles) == 0:
+        critical_roles = (
+            df_emp[df_emp["Job Grade (1-9)"] >= 7]["Current Job Title"]
+            .dropna()
+            .unique()
+            .tolist()
+        )
+
+    pipeline_rows = []
+
+    for role in critical_roles:
+
+        incumbents = df_emp[df_emp["Current Job Title"] == role]
+
+        incumbent_name = (
+            incumbents.iloc[0]["Employee Full Name"]
+            if len(incumbents) > 0 else "Vacant"
+        )
+
+        incumbent_ee = (
+            incumbents.iloc[0]["EE Number"]
+            if len(incumbents) > 0 else "NA"
+        )
+
+        successors = (
+            df_emp[df_emp["Current Job Title"] != role]
+            .sort_values("LPS", ascending=False)
+            .head(3)
+        )
+
+        row = {
+            "Critical Role": role,
+            "Incumbent Name": incumbent_name,
+            "Incumbent EE Number": incumbent_ee,
+        }
+
+        for idx, (_, s) in enumerate(successors.iterrows(), start=1):
+            row[f"Successor {idx} Name"] = s["Employee Full Name"]
+            row[f"Successor {idx} EE"] = s["EE Number"]
+            row[f"Successor {idx} LPS"] = round(s["LPS"], 2)
+            row[f"Successor {idx} Band"] = s["LPS Band"]
+
+        pipeline_rows.append(row)
+
+    return pd.DataFrame(pipeline_rows)
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # TITLE BAR
 # ─────────────────────────────────────────────────────────────────────────────
@@ -501,8 +570,8 @@ st.markdown("""
 # ─────────────────────────────────────────────────────────────────────────────
 # GATE: need at least employees + pipeline
 # ─────────────────────────────────────────────────────────────────────────────
-if "employees" not in data or "pipeline" not in data:
-    st.info("👈 Upload **employees_master.csv** and **succession_pipeline.csv** to get started. All 7 files unlock the full engine.")
+if "employees" not in data:
+    st.info("👈 Upload **employees_master.csv** to get started. All other datasets unlock advanced features.")
     st.stop()
 
 df_emp = recompute_lps(data["employees"], w1, w2, w3, w4, w5)
@@ -515,7 +584,12 @@ else:
     df_eligible = df_emp.copy()
 df_eligible = df_eligible[df_eligible["Job Grade (1-9)"] >= min_grade]
 
-df_pip = data["pipeline"].copy()
+# Auto-generate succession pipeline
+if "org" in data:
+    df_pip = generate_succession_pipeline(df_eligible, data["org"])
+else:
+    df_pip = generate_succession_pipeline(df_eligible)
+
 df_pip.columns = [c.replace("–","-").replace("—","-") for c in df_pip.columns]
 
 CRITICAL_ROLES = sorted(df_pip["Critical Role"].unique().tolist())
@@ -1165,6 +1239,87 @@ with tab5:
             paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
         )
         st.plotly_chart(fig_nb, use_container_width=True, config={"displayModeBar":False})
+
+        # ─────────────────────────────────────────────────────────────────────
+        # GRAPHICAL 9-BOX MATRIX
+        # ─────────────────────────────────────────────────────────────────────
+        st.markdown('<div class="sec-hdr">🧩 Graphical 9-Box Talent Matrix</div>',
+                    unsafe_allow_html=True)
+
+        plot_df = df_eligible.copy()
+
+        plot_df["Performance Axis"] = (
+            plot_df["Average Performance Rating - Last 3 Years (1-5)"]
+        )
+
+        plot_df["Potential Axis"] = plot_df["LPS"] / 20
+
+        plot_df["Category"] = plot_df["LPS Band"]
+
+        fig_9box = px.scatter(
+            plot_df,
+            x="Performance Axis",
+            y="Potential Axis",
+            color="Category",
+            hover_data=[
+                "Employee Full Name",
+                "Current Job Title",
+                "Department",
+                "LPS"
+            ],
+            color_discrete_map={
+                "Band 5 - Ready Now": "#1B7A3E",
+                "Band 4 - Ready in 1-2 Years": "#2563EB",
+                "Band 3 - Ready in 2-3 Years": "#D97706",
+                "Band 2 - Emerging Potential": "#EA580C",
+                "Band 1 - Not Yet Ready": "#B91C1C",
+            },
+        )
+
+        for x in [2.33, 3.66]:
+            fig_9box.add_vline(
+                x=x,
+                line_width=2,
+                line_dash="dash",
+                line_color="#CBD5E1"
+            )
+
+        for y in [2.33, 3.66]:
+            fig_9box.add_hline(
+                y=y,
+                line_width=2,
+                line_dash="dash",
+                line_color="#CBD5E1"
+            )
+
+        fig_9box.update_traces(
+            marker=dict(
+                size=14,
+                line=dict(width=1, color="white")
+            )
+        )
+
+        fig_9box.update_layout(
+            height=650,
+            title="Performance vs Potential — 9 Box Matrix",
+            xaxis=dict(range=[1,5], title="Performance"),
+            yaxis=dict(range=[1,5], title="Potential"),
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="white",
+            legend=dict(
+                orientation="h",
+                y=1.05,
+                x=0.5,
+                xanchor="center"
+            ),
+        )
+
+        st.plotly_chart(
+            fig_9box,
+            use_container_width=True,
+            config={"displayModeBar":False}
+        )
+
 
 # ═════════════════════════════════════════════════════════════════════════════
 # TAB 6 — KF ASSESSMENT EXPLORER
