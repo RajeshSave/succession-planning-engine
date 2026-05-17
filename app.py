@@ -679,7 +679,7 @@ with tab1:
 
     with col_right:
         st.markdown('<div class="sec-hdr">🔗 Succession Pipeline — Top 3 Successors</div>',
-                    unsafe_allow_html=True    key="plotly_chart_0"
+                    unsafe_allow_html=True
 )
 
         # Get top 3 from recomputed LPS for this role
@@ -1222,7 +1222,7 @@ with tab5:
     with r1c2:
         # LPS distribution
         st.markdown('<div class="sec-hdr">🎯 LPS Band Distribution</div>',
-                    unsafe_allow_html=True    key="plotly_chart_10"
+                    unsafe_allow_html=True
 )
         band_dist = df_eligible["LPS Band"].value_counts()
         fig_bands = go.Figure(go.Bar(
@@ -1243,7 +1243,7 @@ with tab5:
 )
 
         # 9-box distribution
-        st.markdown('<div class="sec-hdr">9-Box Distribution</div>', unsafe_allow_html=True    key="plotly_chart_11"
+        st.markdown('<div class="sec-hdr">9-Box Distribution</div>', unsafe_allow_html=True
 )
         nb = df_eligible["9-Box Position"].value_counts().head(6)
         fig_nb = go.Figure(go.Bar(
@@ -1266,7 +1266,7 @@ with tab5:
         # GRAPHICAL 9-BOX MATRIX
         # ─────────────────────────────────────────────────────────────────────
         st.markdown('<div class="sec-hdr">🧩 Graphical 9-Box Talent Matrix</div>',
-                    unsafe_allow_html=True    key="plotly_chart_12"
+                    unsafe_allow_html=True
 )
 
         plot_df = df_eligible.copy()
