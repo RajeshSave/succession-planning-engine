@@ -674,7 +674,7 @@ with tab1:
                               font=dict(family="Syne",size=14,color="#0B2540"),
                               showarrow=False)]
         )
-        st.plotly_chart(fig_donut, use_container_width=True, config={"displayModeBar":False},    key="plotly_chart_0"
+        st.plotly_chart(fig_donut, use_container_width=True, config={"displayModeBar":False}
 )
 
     with col_right:
@@ -772,7 +772,7 @@ with tab1:
                 plot_bgcolor="rgba(0,0,0,0)",
             )
             st.plotly_chart(fig_cmp, use_container_width=True,
-                            config={"displayModeBar":False},    key="plotly_chart_1"
+                            config={"displayModeBar":False}
 )
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -811,7 +811,7 @@ with tab2:
 
     with h2:
         st.plotly_chart(gauge_fig(lps, "Leadership Potential Score", color=bc),
-                        use_container_width=True, config={"displayModeBar":False},    key="plotly_chart_2"
+                        use_container_width=True, config={"displayModeBar":False}
 )
 
     with h3:
@@ -819,11 +819,11 @@ with tab2:
         ve_comp    = emp.get("KF viaEdge - Learning Agility Composite (1-5)", np.nan)
         if not np.isnan(kfalp_comp):
             st.plotly_chart(speedometer_fig(kfalp_comp, "KFALP Composite", color="#C9A227"),
-                            use_container_width=True, config={"displayModeBar":False},    key="plotly_chart_3"
+                            use_container_width=True, config={"displayModeBar":False}
 )
         if not np.isnan(ve_comp):
             st.plotly_chart(speedometer_fig(ve_comp, "viaEdge Composite", color="#7C3AED"),
-                            use_container_width=True, config={"displayModeBar":False},    key="plotly_chart_4"
+                            use_container_width=True, config={"displayModeBar":False}
 )
 
     # ── Feature sliders + radar ──────────────────────────────────────────────
@@ -908,10 +908,10 @@ with tab2:
         ref_ve = [df_emp[k].mean() if k in df_emp.columns else 3.0 for k in ve_keys]
 
         st.plotly_chart(radar_fig(kf_vals, kf_labels, "KFALP", "#C9A227", ref_kf),
-                        use_container_width=True, config={"displayModeBar":False},    key="plotly_chart_5"
+                        use_container_width=True, config={"displayModeBar":False}
 )
         st.plotly_chart(radar_fig(ve_vals, ve_labels, "viaEdge", "#7C3AED", ref_ve),
-                        use_container_width=True, config={"displayModeBar":False},    key="plotly_chart_6"
+                        use_container_width=True, config={"displayModeBar":False}
 )
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -938,7 +938,7 @@ with tab3:
             lps = row["LPS"]
             with hcols[i]:
                 st.plotly_chart(gauge_fig(lps, name[:20], color=clr),
-                                use_container_width=True, config={"displayModeBar":False},    key="plotly_chart_7"
+                                use_container_width=True, config={"displayModeBar":False}
 )
                 st.markdown(f"""
                 <div style="text-align:center;font-size:0.78rem;color:#64748B">
@@ -1023,7 +1023,7 @@ with tab3:
             margin=dict(l=40,r=40,t=20,b=20), height=380,
             paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
         )
-        st.plotly_chart(fig_ov, use_container_width=True, config={"displayModeBar":False},    key="plotly_chart_8"
+        st.plotly_chart(fig_ov, use_container_width=True, config={"displayModeBar":False}
 )
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -1131,11 +1131,11 @@ with tab4:
             hoverlabel=dict(bgcolor="white", font_size=11,
                             font_family="DM Sans", bordercolor="#D1DCE8"),
         )
-        st.plotly_chart(fig_org, use_container_width=True, config={"displayModeBar": True},    key="plotly_chart_9"
+        st.plotly_chart(fig_org, use_container_width=True, config={"displayModeBar": True}
 )
 
         # Legend
-        leg_cols = st.columns(len(grade_colors),    key="plotly_chart_9"
+        leg_cols = st.columns(len(grade_colors)
 )
         for i, (g, c) in enumerate(sorted(grade_colors.items(), reverse=True)):
             with leg_cols[i]:
@@ -1216,7 +1216,7 @@ with tab5:
             yaxis=dict(tickfont=dict(family="DM Sans",size=9), autorange="reversed"),
             paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
         )
-        st.plotly_chart(fig_heat, use_container_width=True, config={"displayModeBar":False},    key="plotly_chart_10"
+        st.plotly_chart(fig_heat, use_container_width=True, config={"displayModeBar":False}
 )
 
     with r1c2:
@@ -1239,7 +1239,7 @@ with tab5:
             margin=dict(l=0,r=40,t=10,b=0), height=220,
             paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
         )
-        st.plotly_chart(fig_bands, use_container_width=True, config={"displayModeBar":False},    key="plotly_chart_11"
+        st.plotly_chart(fig_bands, use_container_width=True, config={"displayModeBar":False}
 )
 
         # 9-box distribution
@@ -1259,7 +1259,7 @@ with tab5:
             margin=dict(l=0,r=40,t=10,b=0), height=230,
             paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
         )
-        st.plotly_chart(fig_nb, use_container_width=True, config={"displayModeBar":False},    key="plotly_chart_12"
+        st.plotly_chart(fig_nb, use_container_width=True, config={"displayModeBar":False}
 )
 
         # ─────────────────────────────────────────────────────────────────────
@@ -1340,8 +1340,7 @@ with tab5:
         st.plotly_chart(
             fig_9box,
             use_container_width=True,
-            config={"displayModeBar":False},
-            key="plotly_chart_13"
+            config={"displayModeBar":False}
 
         )
 
@@ -1380,7 +1379,7 @@ with tab6:
                         xaxis_title=None, yaxis_title=None,
                     )
                     st.plotly_chart(fig_kf_dist, use_container_width=True,
-                                    config={"displayModeBar":False},    key="plotly_chart_14"
+                                    config={"displayModeBar":False}
 )
 
                     # Band breakdown donut
@@ -1399,7 +1398,7 @@ with tab6:
                         paper_bgcolor="rgba(0,0,0,0)",
                     )
                     st.plotly_chart(fig_kf_band, use_container_width=True,
-                                    config={"displayModeBar":False},    key="plotly_chart_15"
+                                    config={"displayModeBar":False}
 )
 
                 with kfc2:
@@ -1426,7 +1425,7 @@ with tab6:
                         yaxis_tickfont=dict(size=8),
                     )
                     st.plotly_chart(fig_kf_heat, use_container_width=True,
-                                    config={"displayModeBar":False},    key="plotly_chart_16"
+                                    config={"displayModeBar":False}
 )
 
         with kf_tab2:
@@ -1451,7 +1450,7 @@ with tab6:
                         title_font=dict(family="Syne",size=12),
                     )
                     st.plotly_chart(fig_ve_dist, use_container_width=True,
-                                    config={"displayModeBar":False},    key="plotly_chart_17"
+                                    config={"displayModeBar":False}
 )
 
                     pct_col = "KF viaEdge Learning Agility Percentile"
@@ -1468,7 +1467,7 @@ with tab6:
                             title_font=dict(family="Syne",size=11),
                         )
                         st.plotly_chart(fig_pct, use_container_width=True,
-                                        config={"displayModeBar":False},    key="plotly_chart_18"
+                                        config={"displayModeBar":False}
 )
 
                 with vec2:
@@ -1492,7 +1491,7 @@ with tab6:
                         xaxis_tickfont=dict(size=9), yaxis_tickfont=dict(size=8),
                     )
                     st.plotly_chart(fig_ve_heat, use_container_width=True,
-                                    config={"displayModeBar":False},    key="plotly_chart_19"
+                                    config={"displayModeBar":False}
 )
 
         with kf_tab3:
@@ -1577,11 +1576,11 @@ with tab7:
                 k2v = e.get("KF viaEdge - Learning Agility Composite (1-5)", np.nan)
                 if not pd.isna(k1v):
                     st.plotly_chart(speedometer_fig(k1v,"KFALP Composite", color="#C9A227"),
-                                    use_container_width=True, config={"displayModeBar":False},    key="plotly_chart_20"
+                                    use_container_width=True, config={"displayModeBar":False}
 )
                 if not pd.isna(k2v):
                     st.plotly_chart(speedometer_fig(k2v,"viaEdge Composite", color="#7C3AED"),
-                                    use_container_width=True, config={"displayModeBar":False},    key="plotly_chart_21"
+                                    use_container_width=True, config={"displayModeBar":False}
 )
 
         with cp2:
@@ -1667,7 +1666,7 @@ with tab7:
                     hovermode="x unified",
                 )
                 st.plotly_chart(fig_timeline, use_container_width=True,
-                                config={"displayModeBar":False},    key="plotly_chart_22"
+                                config={"displayModeBar":False}
 )
 
                 # Promotion detail table
