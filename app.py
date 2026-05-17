@@ -1031,7 +1031,7 @@ with tab3:
 # ═════════════════════════════════════════════════════════════════════════════
 with tab4:
     if "org" not in data:
-        st.info("Upload **org_structure.csv** to view the interactive org chart."    key="plotly_chart_8"
+        st.info("Upload **org_structure.csv** to view the interactive org chart."
 )
     else:
         df_org = data["org"].copy()
