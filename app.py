@@ -596,7 +596,8 @@ with tab1:
                               font=dict(family="Syne",size=14,color="#0B2540"),
                               showarrow=False)]
         )
-        st.plotly_chart(fig_donut, use_container_width=True, config={"displayModeBar":False})
+        st.plotly_chart(fig_donut, use_container_width=True, config={"displayModeBar":False},
+                        key="tab1_donut")
 
     with col_right:
         st.markdown('<div class="sec-hdr">🔗 Succession Pipeline — Top 3 Successors</div>',
@@ -692,7 +693,7 @@ with tab1:
                 plot_bgcolor="rgba(0,0,0,0)",
             )
             st.plotly_chart(fig_cmp, use_container_width=True,
-                            config={"displayModeBar":False})
+                            config={"displayModeBar":False}, key="tab1_cmp_bar")
 
 # ═════════════════════════════════════════════════════════════════════════════
 # TAB 2 — EMPLOYEE PROFILE
@@ -730,17 +731,20 @@ with tab2:
 
     with h2:
         st.plotly_chart(gauge_fig(lps, "Leadership Potential Score", color=bc),
-                        use_container_width=True, config={"displayModeBar":False})
+                        use_container_width=True, config={"displayModeBar":False},
+                        key="tab2_gauge_lps")
 
     with h3:
         kfalp_comp = emp.get("KF KFALP - Composite Score (1-5)", np.nan)
         ve_comp    = emp.get("KF viaEdge - Learning Agility Composite (1-5)", np.nan)
         if not np.isnan(kfalp_comp):
             st.plotly_chart(speedometer_fig(kfalp_comp, "KFALP Composite", color="#C9A227"),
-                            use_container_width=True, config={"displayModeBar":False})
+                            use_container_width=True, config={"displayModeBar":False},
+                            key="tab2_speed_kfalp")
         if not np.isnan(ve_comp):
             st.plotly_chart(speedometer_fig(ve_comp, "viaEdge Composite", color="#7C3AED"),
-                            use_container_width=True, config={"displayModeBar":False})
+                            use_container_width=True, config={"displayModeBar":False},
+                            key="tab2_speed_ve")
 
     # ── Feature sliders + radar ──────────────────────────────────────────────
     sc1, sc2 = st.columns([1.3, 1])
@@ -824,9 +828,11 @@ with tab2:
         ref_ve = [df_emp[k].mean() if k in df_emp.columns else 3.0 for k in ve_keys]
 
         st.plotly_chart(radar_fig(kf_vals, kf_labels, "KFALP", "#C9A227", ref_kf),
-                        use_container_width=True, config={"displayModeBar":False})
+                        use_container_width=True, config={"displayModeBar":False},
+                        key="tab2_radar_kfalp")
         st.plotly_chart(radar_fig(ve_vals, ve_labels, "viaEdge", "#7C3AED", ref_ve),
-                        use_container_width=True, config={"displayModeBar":False})
+                        use_container_width=True, config={"displayModeBar":False},
+                        key="tab2_radar_ve")
 
 # ═════════════════════════════════════════════════════════════════════════════
 # TAB 3 — COMPARE EMPLOYEES
@@ -852,7 +858,8 @@ with tab3:
             lps = row["LPS"]
             with hcols[i]:
                 st.plotly_chart(gauge_fig(lps, name[:20], color=clr),
-                                use_container_width=True, config={"displayModeBar":False})
+                                use_container_width=True, config={"displayModeBar":False},
+                                key=f"tab3_gauge_{i}_{name}")
                 st.markdown(f"""
                 <div style="text-align:center;font-size:0.78rem;color:#64748B">
                   {row['Current Job Title']}<br>Grade {int(row['Job Grade (1-9)'])}
@@ -936,7 +943,8 @@ with tab3:
             margin=dict(l=40,r=40,t=20,b=20), height=380,
             paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
         )
-        st.plotly_chart(fig_ov, use_container_width=True, config={"displayModeBar":False})
+        st.plotly_chart(fig_ov, use_container_width=True, config={"displayModeBar":False},
+                        key="tab3_radar_overlay")
 
 # ═════════════════════════════════════════════════════════════════════════════
 # TAB 4 — ORG CHART
@@ -1042,7 +1050,8 @@ with tab4:
             hoverlabel=dict(bgcolor="white", font_size=11,
                             font_family="DM Sans", bordercolor="#D1DCE8"),
         )
-        st.plotly_chart(fig_org, use_container_width=True, config={"displayModeBar": True})
+        st.plotly_chart(fig_org, use_container_width=True, config={"displayModeBar": True},
+                        key="tab4_org_chart")
 
         # Legend
         leg_cols = st.columns(len(grade_colors))
@@ -1125,7 +1134,8 @@ with tab5:
             yaxis=dict(tickfont=dict(family="DM Sans",size=9), autorange="reversed"),
             paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
         )
-        st.plotly_chart(fig_heat, use_container_width=True, config={"displayModeBar":False})
+        st.plotly_chart(fig_heat, use_container_width=True, config={"displayModeBar":False},
+                        key="tab5_bench_heat")
 
     with r1c2:
         # LPS distribution
@@ -1146,7 +1156,8 @@ with tab5:
             margin=dict(l=0,r=40,t=10,b=0), height=220,
             paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
         )
-        st.plotly_chart(fig_bands, use_container_width=True, config={"displayModeBar":False})
+        st.plotly_chart(fig_bands, use_container_width=True, config={"displayModeBar":False},
+                        key="tab5_bands_bar")
 
         # 9-box distribution
         st.markdown('<div class="sec-hdr">9-Box Distribution</div>', unsafe_allow_html=True)
@@ -1164,7 +1175,8 @@ with tab5:
             margin=dict(l=0,r=40,t=10,b=0), height=230,
             paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
         )
-        st.plotly_chart(fig_nb, use_container_width=True, config={"displayModeBar":False})
+        st.plotly_chart(fig_nb, use_container_width=True, config={"displayModeBar":False},
+                        key="tab5_9box_bar")
 
 # ═════════════════════════════════════════════════════════════════════════════
 # TAB 6 — KF ASSESSMENT EXPLORER
@@ -1200,7 +1212,7 @@ with tab6:
                         xaxis_title=None, yaxis_title=None,
                     )
                     st.plotly_chart(fig_kf_dist, use_container_width=True,
-                                    config={"displayModeBar":False})
+                                    config={"displayModeBar":False}, key="tab6_kf_dist")
 
                     # Band breakdown donut
                     band_cnt = dim_df["KFALP Rating Band"].value_counts()
@@ -1218,7 +1230,7 @@ with tab6:
                         paper_bgcolor="rgba(0,0,0,0)",
                     )
                     st.plotly_chart(fig_kf_band, use_container_width=True,
-                                    config={"displayModeBar":False})
+                                    config={"displayModeBar":False}, key="tab6_kf_band")
 
                 with kfc2:
                     # Heatmap: employee × dimension
@@ -1244,7 +1256,7 @@ with tab6:
                         yaxis_tickfont=dict(size=8),
                     )
                     st.plotly_chart(fig_kf_heat, use_container_width=True,
-                                    config={"displayModeBar":False})
+                                    config={"displayModeBar":False}, key="tab6_kf_heat")
 
         with kf_tab2:
             if "viaedge" in data:
@@ -1268,7 +1280,7 @@ with tab6:
                         title_font=dict(family="Syne",size=12),
                     )
                     st.plotly_chart(fig_ve_dist, use_container_width=True,
-                                    config={"displayModeBar":False})
+                                    config={"displayModeBar":False}, key="tab6_ve_dist")
 
                     pct_col = "KF viaEdge Learning Agility Percentile"
                     if pct_col in df_ve.columns:
@@ -1284,7 +1296,7 @@ with tab6:
                             title_font=dict(family="Syne",size=11),
                         )
                         st.plotly_chart(fig_pct, use_container_width=True,
-                                        config={"displayModeBar":False})
+                                        config={"displayModeBar":False}, key="tab6_ve_pct")
 
                 with vec2:
                     ve_pivot = df_ve.pivot_table(
@@ -1307,7 +1319,7 @@ with tab6:
                         xaxis_tickfont=dict(size=9), yaxis_tickfont=dict(size=8),
                     )
                     st.plotly_chart(fig_ve_heat, use_container_width=True,
-                                    config={"displayModeBar":False})
+                                    config={"displayModeBar":False}, key="tab6_ve_heat")
 
         with kf_tab3:
             if "ref" in data:
@@ -1391,10 +1403,12 @@ with tab7:
                 k2v = e.get("KF viaEdge - Learning Agility Composite (1-5)", np.nan)
                 if not pd.isna(k1v):
                     st.plotly_chart(speedometer_fig(k1v,"KFALP Composite", color="#C9A227"),
-                                    use_container_width=True, config={"displayModeBar":False})
+                                    use_container_width=True, config={"displayModeBar":False},
+                                    key="tab7_speed_kfalp")
                 if not pd.isna(k2v):
                     st.plotly_chart(speedometer_fig(k2v,"viaEdge Composite", color="#7C3AED"),
-                                    use_container_width=True, config={"displayModeBar":False})
+                                    use_container_width=True, config={"displayModeBar":False},
+                                    key="tab7_speed_ve")
 
         with cp2:
             emp_promos = df_promo[df_promo["Employee Full Name"]==sel_cp].sort_values("Promotion Year")
@@ -1479,7 +1493,7 @@ with tab7:
                     hovermode="x unified",
                 )
                 st.plotly_chart(fig_timeline, use_container_width=True,
-                                config={"displayModeBar":False})
+                                config={"displayModeBar":False}, key="tab7_timeline")
 
                 # Promotion detail table
                 st.markdown('<div class="sec-hdr" style="margin-top:8px">📋 Promotion History Detail</div>',
@@ -1517,4 +1531,5 @@ with tab7:
             paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="#F8FBFD",
             title_font=dict(family="Syne",size=12),
         )
-        st.plotly_chart(fig_vel, use_container_width=True, config={"displayModeBar":False})
+        st.plotly_chart(fig_vel, use_container_width=True, config={"displayModeBar":False},
+                        key="tab7_vel_scatter")
