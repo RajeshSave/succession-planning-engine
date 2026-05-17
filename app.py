@@ -20,6 +20,15 @@ from plotly.subplots import make_subplots
 import networkx as nx
 import io, base64, textwrap
 
+def hex_to_rgba(hex_color, alpha=0.18):
+    """Convert #RRGGBB to rgba(r,g,b,alpha) — required for Plotly 6+."""
+    h = hex_color.lstrip('#')
+    if len(h) == 6:
+        r, g, b = int(h[0:2],16), int(h[2:4],16), int(h[4:6],16)
+        return f"rgba({r},{g},{b},{alpha})"
+    return hex_color  # pass-through if already rgba or named
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # PAGE CONFIG
 # ─────────────────────────────────────────────────────────────────────────────
@@ -333,7 +342,7 @@ def radar_fig(values, labels, name, color="#0D7377", ref_vals=None):
         ))
     fig.add_trace(go.Scatterpolar(
         r=values + [values[0]], theta=labels + [labels[0]],
-        fill="toself", fillcolor=f"{color}30",
+        fill="toself", fillcolor=hex_to_rgba(color, 0.19),
         line=dict(color=color, width=2.5),
         name=name
     ))
@@ -916,7 +925,7 @@ with tab3:
             clr = cmp_colors[j]
             fig_ov.add_trace(go.Scatterpolar(
                 r=vals+[vals[0]], theta=kf_radar_lbls+[kf_radar_lbls[0]],
-                fill="toself", fillcolor=f"{clr}25",
+                fill="toself", fillcolor=hex_to_rgba(clr, 0.15),
                 line=dict(color=clr, width=2.5), name=name
             ))
         fig_ov.update_layout(
