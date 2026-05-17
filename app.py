@@ -1390,10 +1390,10 @@ with tab7:
                 k1v = e.get("KF KFALP - Composite Score (1-5)", np.nan)
                 k2v = e.get("KF viaEdge - Learning Agility Composite (1-5)", np.nan)
                 if not pd.isna(k1v):
-                    st.plotly_chart(speedometer_fig(k1v,"KFALP Composite","#C9A227"),
+                    st.plotly_chart(speedometer_fig(k1v,"KFALP Composite", color="#C9A227"),
                                     use_container_width=True, config={"displayModeBar":False})
                 if not pd.isna(k2v):
-                    st.plotly_chart(speedometer_fig(k2v,"viaEdge Composite","#7C3AED"),
+                    st.plotly_chart(speedometer_fig(k2v,"viaEdge Composite", color="#7C3AED"),
                                     use_container_width=True, config={"displayModeBar":False})
 
         with cp2:
