@@ -1227,37 +1227,158 @@ with tab6:
 # TAB 7 — CAREER PATH
 # ═══════════════════════════════════════════════════════════════════════════
 with tab7:
+    st.markdown('<div class="sec-hdr">📈 Career Path & Promotion Trajectory</div>',
+                unsafe_allow_html=True)
+
+    # ── Employee selector (always visible — does not need promo file) ──────────
+    t7_sel_col, _ = st.columns([2, 3])
+    with t7_sel_col:
+        sel_cp = st.selectbox("Select Employee", all_names, key="cp_sel")
+    emp_cp_row = df_emp[df_emp["Employee Full Name"] == sel_cp]
+
+    if len(emp_cp_row) > 0:
+        e_cp = emp_cp_row.iloc[0]
+        lps_cp = safe_float(e_cp["LPS"]); clr_cp = lps_color(lps_cp)
+
+        # ── Career KPI strip ────────────────────────────────────────────────────
+        tot_prom = int(e_cp["Total Promotions (Career)"])
+        p5yr     = int(e_cp["Promotions in Last 5 Years"])
+        ppy      = safe_float(e_cp["Promotions per Year (Career)"])
+        avg_p    = safe_float(e_cp["Average Performance Rating - Last 3 Years (1-5)"])
+        last_p   = safe_float(e_cp["Last Annual Performance Rating (1-5)"])
+        traj     = safe_float(e_cp["Performance Trajectory"])
+        traj_clr = "#1B7A3E" if traj > 0 else "#B91C1C" if traj < 0 else "#64748B"
+        traj_lbl = f"+{traj:.1f} ↑" if traj > 0 else f"{traj:.1f} ↓" if traj < 0 else "→ Stable"
+
+        st.markdown(f"""
+        <div class="kpi-row" style="margin-bottom:14px">
+          <div class="kpi" style="border-left:4px solid {clr_cp}">
+            <div class="kpi-value" style="color:{clr_cp}">{lps_cp:.1f}</div>
+            <div class="kpi-label">Leadership Potential Score</div>
+          </div>
+          <div class="kpi" style="border-left:4px solid #0D7377">
+            <div class="kpi-value" style="color:#0D7377">{tot_prom}</div>
+            <div class="kpi-label">Total Promotions (Career)</div>
+          </div>
+          <div class="kpi" style="border-left:4px solid #2563EB">
+            <div class="kpi-value" style="color:#2563EB">{p5yr}</div>
+            <div class="kpi-label">Promotions (Last 5 Yrs)</div>
+          </div>
+          <div class="kpi" style="border-left:4px solid #C9A227">
+            <div class="kpi-value" style="color:#C9A227">{ppy:.2f}</div>
+            <div class="kpi-label">Promotions / Year</div>
+          </div>
+          <div class="kpi" style="border-left:4px solid #7C3AED">
+            <div class="kpi-value" style="color:#7C3AED">{avg_p:.1f}</div>
+            <div class="kpi-label">Avg Performance (3yr)</div>
+          </div>
+          <div class="kpi" style="border-left:4px solid {traj_clr}">
+            <div class="kpi-value" style="color:{traj_clr}">{traj_lbl}</div>
+            <div class="kpi-label">Performance Trajectory</div>
+          </div>
+        </div>""", unsafe_allow_html=True)
+
+        # ── Performance trend bar chart (from employees_master — always visible) ──
+        perf_cols = [
+            ("3yr Average", avg_p, "#0D7377"),
+            ("Last Rating",  last_p, "#C9A227"),
+        ]
+        fig_perf_bar = go.Figure()
+        # Benchmark line
+        org_avg_perf = df_emp["Average Performance Rating - Last 3 Years (1-5)"].mean()
+        fig_perf_bar.add_trace(go.Bar(
+            x=["3yr Average", "Last Rating"],
+            y=[avg_p, last_p],
+            marker_color=["#0D7377","#C9A227"],
+            text=[f"{avg_p:.1f}", f"{last_p:.1f}"],
+            textposition="outside",
+            textfont=dict(family="Syne", size=14, color="#0B2540"),
+            width=0.4,
+        ))
+        fig_perf_bar.add_hline(y=org_avg_perf, line_dash="dot", line_color="#94A3B8",
+                               annotation_text=f"Org avg {org_avg_perf:.1f}",
+                               annotation_position="top right",
+                               annotation_font=dict(size=10, color="#64748B"))
+        fig_perf_bar.update_layout(
+            xaxis=dict(tickfont=dict(family="Syne", size=12)),
+            yaxis=dict(range=[0, 6], tickvals=[1,2,3,4,5],
+                       ticktext=["1 Limited","2 Developing","3 Effective","4 Strong","5 Exceptional"],
+                       tickfont=dict(size=9)),
+            margin=dict(l=0,r=0,t=10,b=0), height=200,
+            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+            showlegend=False,
+        )
+
+        # ── Grade vs org distribution ───────────────────────────────────────────
+        grade_dist = df_emp["Job Grade (1-9)"].value_counts().sort_index()
+        emp_grade = int(e_cp["Job Grade (1-9)"])
+        bar_colors = ["#C9A227" if g == emp_grade else "#CBD5E1" for g in grade_dist.index]
+        fig_grade_dist = go.Figure(go.Bar(
+            x=[f"G{g}" for g in grade_dist.index],
+            y=grade_dist.values,
+            marker_color=bar_colors,
+            text=grade_dist.values, textposition="outside",
+            textfont=dict(size=9),
+        ))
+        fig_grade_dist.add_annotation(
+            x=f"G{emp_grade}", y=grade_dist.get(emp_grade, 0) + 2,
+            text="▼ You", showarrow=False,
+            font=dict(family="Syne", size=10, color="#C9A227"),
+        )
+        fig_grade_dist.update_layout(
+            xaxis=dict(tickfont=dict(family="Syne", size=10)),
+            yaxis=dict(tickfont=dict(size=9), title="Headcount"),
+            margin=dict(l=0,r=0,t=20,b=0), height=200,
+            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+            showlegend=False,
+        )
+
+        # ── 3-column performance + grade view ──────────────────────────────────
+        pa, pb, pc_col = st.columns([1.2, 1.2, 1])
+        with pa:
+            st.markdown('<div style="font-size:0.82rem;font-weight:700;color:#0B2540;margin-bottom:6px">Performance Ratings</div>', unsafe_allow_html=True)
+            st.plotly_chart(fig_perf_bar, use_container_width=True,
+                            config={"displayModeBar":False}, key="pc_t7_perfbar")
+        with pb:
+            st.markdown('<div style="font-size:0.82rem;font-weight:700;color:#0B2540;margin-bottom:6px">Grade Distribution (Gold = Your Grade)</div>', unsafe_allow_html=True)
+            st.plotly_chart(fig_grade_dist, use_container_width=True,
+                            config={"displayModeBar":False}, key="pc_t7_gradedist")
+        with pc_col:
+            st.markdown('<div style="font-size:0.82rem;font-weight:700;color:#0B2540;margin-bottom:6px">KF Assessment</div>', unsafe_allow_html=True)
+            k1v = safe_float(e_cp.get("KF KFALP - Composite Score (1-5)", 0))
+            k2v = safe_float(e_cp.get("KF viaEdge - Learning Agility Composite (1-5)", 0))
+            if k1v > 0:
+                st.plotly_chart(speedometer_fig(k1v, "KFALP", color="#C9A227"),
+                                use_container_width=True, config={"displayModeBar":False}, key="pc_023")
+            if k2v > 0:
+                st.plotly_chart(speedometer_fig(k2v, "viaEdge", color="#7C3AED"),
+                                use_container_width=True, config={"displayModeBar":False}, key="pc_024")
+
+        st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
+
     if "promos" not in data:
-        st.info("Upload **promotion_history.csv** to view career paths.")
+        st.info("Upload **promotion_history.csv** to view the detailed promotion timeline below.")
     else:
         df_promo=data["promos"].copy()
         df_promo.columns=[c.replace("\u2013","-").replace("\u2014","-") for c in df_promo.columns]
-        st.markdown('<div class="sec-hdr">📈 Career Path & Promotion Trajectory</div>',
-                    unsafe_allow_html=True)
         cp1,cp2=st.columns([1,2.5])
         with cp1:
-            promo_names=sorted(df_promo["Employee Full Name"].unique().tolist())
-            sel_cp=st.selectbox("Select Employee",promo_names,key="cp_sel")
-            emp_cp=df_emp[df_emp["Employee Full Name"]==sel_cp]
-            if len(emp_cp)>0:
-                e=emp_cp.iloc[0]; lps_s=safe_float(e["LPS"]); clr_v=lps_color(lps_s)
+            # Profile card using sel_cp already selected above
+            if len(emp_cp_row) > 0:
+                e = emp_cp_row.iloc[0]; lps_s = safe_float(e["LPS"]); clr_v = lps_color(lps_s)
                 st.markdown(f"""<div class="card">
                   <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px">
                     {avatar_html(sel_cp,44,clr_v)}
                     <div>
                       <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:0.9rem">{sel_cp}</div>
                       <div style="font-size:0.75rem;color:#64748B">{e['Current Job Title']}</div>
+                      <div style="font-size:0.72rem;color:#64748B">{e['Department']} · Grade {int(e['Job Grade (1-9)'])}</div>
                     </div>
                   </div>
                   <div style="font-size:0.78rem;color:#374151">
-                    <b>Grade:</b> {int(e['Job Grade (1-9)'])} &nbsp;|&nbsp; <b>Tenure:</b> {e['Tenure with Organisation (Years)']}y<br>
-                    <b>Promotions:</b> {int(e['Total Promotions (Career)'])} &nbsp;|&nbsp; <b>LPS:</b> {lps_s:.1f}
+                    <b>Tenure:</b> {e['Tenure with Organisation (Years)']}y &nbsp;|&nbsp; <b>LPS:</b> {lps_s:.1f}
                   </div>
                 </div>""", unsafe_allow_html=True)
-                k1v=safe_float(e.get("KF KFALP - Composite Score (1-5)",0))
-                k2v=safe_float(e.get("KF viaEdge - Learning Agility Composite (1-5)",0))
-                if k1v>0: st.plotly_chart(speedometer_fig(k1v,"KFALP Composite",color="#C9A227"),use_container_width=True,config={"displayModeBar":False}, key="pc_023")
-                if k2v>0: st.plotly_chart(speedometer_fig(k2v,"viaEdge Composite",color="#7C3AED"),use_container_width=True,config={"displayModeBar":False}, key="pc_024")
 
         with cp2:
             emp_promos=df_promo[df_promo["Employee Full Name"]==sel_cp].sort_values("Promotion Year")
@@ -1276,3 +1397,580 @@ with tab7:
                                 colorbar=dict(title="Perf",tickfont=dict(size=8),len=0.5,y=0.5)),
                     text=[f"G{g}" for g in grades],textposition="top center",
                     textfont=dict(family="Syne",size=10,color="#0B2540"),name="Grade"))
+                fig_tl.add_trace(go.Scatter(x=years,y=perfs,mode="lines+markers",
+                    line=dict(color="#C9A227",width=2,dash="dot"),marker=dict(size=8,color="#C9A227"),
+                    name="Performance",yaxis="y2"))
+                entry_yr=emp_promos["Promotion Year"].min()-2
+                entry_gr=emp_promos["Promoted From Grade"].iloc[0]
+                fig_tl.add_trace(go.Scatter(x=[entry_yr],y=[entry_gr],mode="markers+text",
+                    marker=dict(size=12,color="#64748B",symbol="square"),
+                    text=["Entry"],textposition="top center",textfont=dict(family="Syne",size=9,color="#64748B"),
+                    name="Career Entry",hoverinfo="skip"))
+                emp_row=df_emp[df_emp["Employee Full Name"]==sel_cp]
+                if len(emp_row)>0:
+                    fig_tl.add_trace(go.Scatter(x=[2025],y=[int(emp_row.iloc[0]["Job Grade (1-9)"])],
+                        mode="markers+text",marker=dict(size=14,color=lps_color(emp_row.iloc[0]["LPS"]),symbol="star"),
+                        text=["Now"],textposition="top center",textfont=dict(family="Syne",size=10,color="#0B2540"),
+                        name="Current",hoverinfo="skip"))
+                fig_tl.update_layout(
+                    xaxis=dict(title="Year",tickfont=dict(family="DM Sans",size=10)),
+                    yaxis=dict(title="Job Grade",range=[0,10],tickvals=list(range(1,10)),tickfont=dict(family="DM Sans",size=10)),
+                    yaxis2=dict(title="Performance",overlaying="y",side="right",range=[0,5.5],tickfont=dict(size=9)),
+                    legend=dict(font=dict(family="DM Sans",size=9),orientation="h",x=0.5,xanchor="center",y=1.06),
+                    margin=dict(l=0,r=60,t=30,b=0),height=320,
+                    paper_bgcolor="rgba(0,0,0,0)",plot_bgcolor="#F8FBFD",hovermode="x unified")
+                st.plotly_chart(fig_tl,use_container_width=True,config={"displayModeBar":False}, key="pc_025")
+                disp_cols=[c for c in ["Promotion Number (Career)","Promotion Year","Promoted From Grade","Promoted To Grade","Performance Rating at Promotion","Years Since Last Promotion"] if c in emp_promos.columns]
+                st.markdown('<div class="sec-hdr" style="margin-top:8px">📋 Promotion History</div>',unsafe_allow_html=True)
+                st.dataframe(emp_promos[disp_cols].reset_index(drop=True),use_container_width=True,hide_index=True)
+
+        st.markdown('<div class="sec-hdr" style="margin-top:16px">🚀 Promotion Velocity vs Performance</div>',unsafe_allow_html=True)
+        vel_df=df_emp[["Job Grade (1-9)","Promotions per Year (Career)","Average Performance Rating - Last 3 Years (1-5)"]].dropna()
+        fig_vel=px.scatter(vel_df,x="Average Performance Rating - Last 3 Years (1-5)",y="Promotions per Year (Career)",
+                            color="Job Grade (1-9)",color_continuous_scale=px.colors.sequential.Teal,opacity=0.7,size_max=8,
+                            labels={"Average Performance Rating - Last 3 Years (1-5)":"Avg Performance (3yr)",
+                                    "Promotions per Year (Career)":"Promotions / Year","Job Grade (1-9)":"Grade"},
+                            title="Performance vs Promotion Velocity (coloured by Grade)")
+        fig_vel.update_layout(margin=dict(l=0,r=0,t=30,b=0),height=320,
+                               paper_bgcolor="rgba(0,0,0,0)",plot_bgcolor="#F8FBFD",
+                               title_font=dict(family="Syne",size=12))
+        st.plotly_chart(fig_vel,use_container_width=True,config={"displayModeBar":False}, key="pc_026")
+
+# ═══════════════════════════════════════════════════════════════════════════
+# TAB 8 — DEVELOPMENT PRESCRIPTION (Interventions & Courses)
+# ═══════════════════════════════════════════════════════════════════════════
+with tab8:
+    st.markdown('<div class="sec-hdr">💊 Development Prescription — Personalised Interventions</div>',
+                unsafe_allow_html=True)
+
+    # ── Intervention library keyed by LPS cluster + KF dimension ─────────────
+    INTERVENTION_LIBRARY = {
+        "Performance": {
+            "description": "Interventions to strengthen delivery, accountability and performance trajectory.",
+            "courses": [
+                {"name": "High-Impact Leadership (Korn Ferry)",     "type": "Executive Programme","duration": "3 days","provider": "Korn Ferry",       "mode": "In-person / Virtual"},
+                {"name": "Leading for Results (CCL)",               "type": "Leadership Course",  "duration": "4 days","provider": "CCL",             "mode": "In-person"},
+                {"name": "Accountability & Execution (LinkedIn Learning)", "type": "Online Course","duration": "6 hrs", "provider": "LinkedIn Learning","mode": "Self-paced"},
+                {"name": "OKR Mastery (Coursera — Google)",         "type": "Online Course",      "duration": "8 hrs", "provider": "Coursera",        "mode": "Self-paced"},
+                {"name": "Execution: The Discipline of Getting Things Done (Book)", "type": "Reading","duration": "—","provider": "Bossidy & Charan","mode": "Self-directed"},
+            ]
+        },
+        "KF Assessment": {
+            "description": "Interventions to build leadership potential as measured by KFALP and viaEdge.",
+            "courses": [
+                {"name": "Korn Ferry Leadership Architect Certification","type": "Certification","duration": "2 days","provider": "Korn Ferry","mode": "Virtual"},
+                {"name": "Emotional Intelligence (Daniel Goleman — Coursera)","type": "Online Course","duration": "10 hrs","provider": "Coursera","mode": "Self-paced"},
+                {"name": "Learning Agility Development Journey (Korn Ferry viaEdge)","type": "Coaching Programme","duration": "6 months","provider": "Korn Ferry","mode": "Blended"},
+                {"name": "Growth Mindset (Microsoft — LinkedIn Learning)","type": "Online Course","duration": "4 hrs","provider": "LinkedIn Learning","mode": "Self-paced"},
+                {"name": "Systems Thinking (MIT OpenCourseWare)","type": "Online Course","duration": "12 hrs","provider": "MIT OCW","mode": "Self-paced"},
+                {"name": "Executive Presence (Harvard ManageMentor)","type": "Online Course","duration": "8 hrs","provider": "Harvard Business Publishing","mode": "Self-paced"},
+            ]
+        },
+        "Career Velocity": {
+            "description": "Interventions to accelerate career progression pace and build a track record of growth.",
+            "courses": [
+                {"name": "Stretch Assignment Framework (Internal)","type": "Action Learning","duration": "6–12 months","provider": "Internal HR","mode": "On-the-job"},
+                {"name": "Career Conversations Toolkit (Korn Ferry)","type": "Workshop","duration": "1 day","provider": "Korn Ferry","mode": "In-person"},
+                {"name": "Personal Branding for Leaders (LinkedIn Learning)","type": "Online Course","duration": "5 hrs","provider": "LinkedIn Learning","mode": "Self-paced"},
+                {"name": "Sponsorship Programme (Internal)","type": "Mentoring","duration": "12 months","provider": "Internal L&D","mode": "In-person"},
+                {"name": "Managing Your Career (Coursera — Univ. of Michigan)","type": "Online Course","duration": "10 hrs","provider": "Coursera","mode": "Self-paced"},
+            ]
+        },
+        "Leadership Breadth": {
+            "description": "Interventions to widen cross-functional, cross-cultural and enterprise leadership exposure.",
+            "courses": [
+                {"name": "Cross-Functional Rotation Programme (Internal)","type": "Rotation","duration": "3–6 months","provider": "Internal HR","mode": "On-the-job"},
+                {"name": "Global Leadership Programme (IMD)","type": "Executive Programme","duration": "5 days","provider": "IMD Business School","mode": "In-person"},
+                {"name": "Leading Diverse Teams (edX — Catalyst)","type": "Online Course","duration": "6 hrs","provider": "edX","mode": "Self-paced"},
+                {"name": "Inclusive Leadership (Coursera — Catalyst)","type": "Online Course","duration": "5 hrs","provider": "Coursera","mode": "Self-paced"},
+                {"name": "Strategic Stakeholder Management (INSEAD)","type": "Online Course","duration": "8 hrs","provider": "INSEAD","mode": "Self-paced"},
+                {"name": "Critical Projects Sponsorship (Internal)","type": "Action Learning","duration": "Ongoing","provider": "Internal HR","mode": "On-the-job"},
+            ]
+        },
+        "Readiness": {
+            "description": "Interventions to close grade gaps, improve mobility readiness and reduce flight risk.",
+            "courses": [
+                {"name": "Succession Readiness Coaching (Korn Ferry)","type": "Executive Coaching","duration": "6 months","provider": "Korn Ferry","mode": "1-on-1"},
+                {"name": "Transition to Senior Leadership (CCL)","type": "Leadership Course","duration": "4 days","provider": "CCL","mode": "In-person"},
+                {"name": "Negotiation & Influence (Harvard Online)","type": "Online Course","duration": "7 hrs","provider": "Harvard Online","mode": "Self-paced"},
+                {"name": "Retention & Engagement Conversation (Internal)","type": "HR Intervention","duration": "Ongoing","provider": "HRBP","mode": "In-person"},
+                {"name": "Leading Change (Prosci — ADKAR)","type": "Certification","duration": "2 days","provider": "Prosci","mode": "Virtual"},
+            ]
+        },
+        "KF KFALP — Drivers": {
+            "description": "Strengthen Results Orientation, Achievement Drive and Ambition to Lead.",
+            "courses": [
+                {"name": "Unleashing Personal Accountability (Korn Ferry)","type": "Workshop","duration": "1 day","provider": "Korn Ferry","mode": "Virtual"},
+                {"name": "High Performance Habits (Brendon Burchard — Udemy)","type": "Online Course","duration": "8 hrs","provider": "Udemy","mode": "Self-paced"},
+                {"name": "The Achievement Habit (Stanford — edX)","type": "Online Course","duration": "6 hrs","provider": "edX","mode": "Self-paced"},
+            ]
+        },
+        "KF KFALP — Curiosity": {
+            "description": "Build Information Seeking, Breadth of Interests and Tolerance of Ambiguity.",
+            "courses": [
+                {"name": "Design Thinking (IDEO — Coursera)","type": "Online Course","duration": "12 hrs","provider": "Coursera","mode": "Self-paced"},
+                {"name": "Creative Thinking: Techniques and Tools (Imperial — Coursera)","type": "Online Course","duration": "10 hrs","provider": "Coursera","mode": "Self-paced"},
+                {"name": "Intellectual Curiosity (LinkedIn Learning)","type": "Online Course","duration": "3 hrs","provider": "LinkedIn Learning","mode": "Self-paced"},
+            ]
+        },
+        "KF KFALP — Insight": {
+            "description": "Improve Self-Awareness, Receptivity to Feedback and Pattern Recognition.",
+            "courses": [
+                {"name": "360 Feedback Debrief & Coaching (Korn Ferry)","type": "Coaching","duration": "3 sessions","provider": "Korn Ferry","mode": "1-on-1"},
+                {"name": "Mindfulness-Based Leadership (Search Inside Yourself — Google)","type": "Programme","duration": "2 days","provider": "SIYLI","mode": "In-person"},
+                {"name": "Developing Self-Awareness (LinkedIn Learning)","type": "Online Course","duration": "4 hrs","provider": "LinkedIn Learning","mode": "Self-paced"},
+            ]
+        },
+        "KF KFALP — Engagement": {
+            "description": "Strengthen Relationship Quality, Collaborative Orientation and Inspiring Others.",
+            "courses": [
+                {"name": "Inspiring and Motivating Individuals (Coursera — Michigan)","type": "Online Course","duration": "8 hrs","provider": "Coursera","mode": "Self-paced"},
+                {"name": "Stakeholder Management (PMI — LinkedIn Learning)","type": "Online Course","duration": "5 hrs","provider": "LinkedIn Learning","mode": "Self-paced"},
+                {"name": "Influencing Without Authority (CCL)","type": "Workshop","duration": "2 days","provider": "CCL","mode": "In-person"},
+            ]
+        },
+        "KF KFALP — Determination": {
+            "description": "Build Persistence, Grit, Emotional Regulation and Recovery Speed.",
+            "courses": [
+                {"name": "Resilience & Mental Toughness (AQai — online)","type": "Assessment + Coaching","duration": "3 months","provider": "AQai","mode": "Blended"},
+                {"name": "Grit: The Power of Passion and Perseverance (Udemy)","type": "Online Course","duration": "5 hrs","provider": "Udemy","mode": "Self-paced"},
+                {"name": "Managing Stress & Wellbeing (FutureLearn)","type": "Online Course","duration": "6 hrs","provider": "FutureLearn","mode": "Self-paced"},
+            ]
+        },
+        "KF KFALP — Learnability": {
+            "description": "Accelerate Speed and Depth of Learning and Mental Agility.",
+            "courses": [
+                {"name": "Learning How to Learn (Coursera — UC San Diego)","type": "Online Course","duration": "15 hrs","provider": "Coursera","mode": "Self-paced"},
+                {"name": "Critical Thinking & Problem Solving (edX — Rochester)","type": "Online Course","duration": "10 hrs","provider": "edX","mode": "Self-paced"},
+                {"name": "Accelerated Learning Techniques (Udemy)","type": "Online Course","duration": "6 hrs","provider": "Udemy","mode": "Self-paced"},
+            ]
+        },
+        "KF viaEdge — Mental Agility": {
+            "description": "Strengthen Inquisitiveness, Complexity handling and Connector ability.",
+            "courses": [
+                {"name": "Systems Thinking & Complexity (MIT OCW)","type": "Online Course","duration": "12 hrs","provider": "MIT OCW","mode": "Self-paced"},
+                {"name": "Data-Driven Decision Making (Coursera — PwC)","type": "Online Course","duration": "8 hrs","provider": "Coursera","mode": "Self-paced"},
+                {"name": "Lateral Thinking (LinkedIn Learning)","type": "Online Course","duration": "2 hrs","provider": "LinkedIn Learning","mode": "Self-paced"},
+            ]
+        },
+        "KF viaEdge — People Agility": {
+            "description": "Build Open-Mindedness, People Smart and Role Flexibility.",
+            "courses": [
+                {"name": "Cross-Cultural Management (Coursera — ESSEC)","type": "Online Course","duration": "10 hrs","provider": "Coursera","mode": "Self-paced"},
+                {"name": "Developing Your Emotional Intelligence (LinkedIn Learning)","type": "Online Course","duration": "5 hrs","provider": "LinkedIn Learning","mode": "Self-paced"},
+                {"name": "Radical Candour (Kim Scott — workshop)","type": "Workshop","duration": "1 day","provider": "Radical Candour","mode": "Virtual"},
+            ]
+        },
+        "KF viaEdge — Change Agility": {
+            "description": "Build Experimenter mindset, Visionary capability and Stalwart resilience.",
+            "courses": [
+                {"name": "Leading Organisational Change (Coursera — Case Western)","type": "Online Course","duration": "12 hrs","provider": "Coursera","mode": "Self-paced"},
+                {"name": "Innovation & Design Thinking (MIT Sloan — edX)","type": "Online Course","duration": "16 hrs","provider": "edX","mode": "Self-paced"},
+                {"name": "Agile Leadership (LinkedIn Learning)","type": "Online Course","duration": "4 hrs","provider": "LinkedIn Learning","mode": "Self-paced"},
+            ]
+        },
+        "KF viaEdge — Results Agility": {
+            "description": "Strengthen Drive, executive Presence, Resourcefulness and Composure.",
+            "courses": [
+                {"name": "Executive Presence (Harvard ManageMentor)","type": "Online Course","duration": "8 hrs","provider": "Harvard Business Publishing","mode": "Self-paced"},
+                {"name": "Leading in Tough Times (CCL)","type": "Workshop","duration": "2 days","provider": "CCL","mode": "In-person"},
+                {"name": "Resourcefulness & Problem Solving (LinkedIn Learning)","type": "Online Course","duration": "3 hrs","provider": "LinkedIn Learning","mode": "Self-paced"},
+            ]
+        },
+        "KF viaEdge — Self-Awareness": {
+            "description": "Build Feedback-Orientation, Reflective practice and Emotional Regulation.",
+            "courses": [
+                {"name": "Mindful Leadership (Search Inside Yourself — SIYLI)","type": "Programme","duration": "2 days","provider": "SIYLI","mode": "In-person"},
+                {"name": "Feedback & Coaching Skills (LinkedIn Learning)","type": "Online Course","duration": "4 hrs","provider": "LinkedIn Learning","mode": "Self-paced"},
+                {"name": "Journaling for Leaders (Internal L&D)","type": "Self-directed","duration": "Ongoing","provider": "Internal","mode": "Self-directed"},
+            ]
+        },
+    }
+
+    TYPE_COLORS = {
+        "Executive Programme":    "#0B2540",
+        "Leadership Course":      "#0D7377",
+        "Online Course":          "#2563EB",
+        "Certification":          "#7C3AED",
+        "Coaching Programme":     "#C9A227",
+        "Executive Coaching":     "#C9A227",
+        "Workshop":               "#1B7A3E",
+        "Rotation":               "#EA580C",
+        "Action Learning":        "#D97706",
+        "HR Intervention":        "#B91C1C",
+        "Reading":                "#64748B",
+        "Coaching":               "#C9A227",
+        "Programme":              "#0D7377",
+        "Assessment + Coaching":  "#7C3AED",
+        "Mentoring":              "#1B7A3E",
+        "Self-directed":          "#64748B",
+    }
+
+    # ── Employee selector ──────────────────────────────────────────────────────
+    rx_c1, rx_c2 = st.columns([1.5, 3])
+    with rx_c1:
+        rx_emp_name = st.selectbox("Select Employee", all_names, key="rx_emp")
+    rx_emp = df_emp[df_emp["Employee Full Name"] == rx_emp_name].iloc[0]
+    rx_lps = rx_emp["LPS"]
+    rx_bc  = lps_color(rx_lps)
+
+    # ── Profile summary strip ──────────────────────────────────────────────────
+    with rx_c2:
+        st.markdown(f"""
+        <div style="display:flex;align-items:center;gap:14px;background:white;
+             border:1px solid #D1DCE8;border-radius:12px;padding:14px 18px;margin-top:4px">
+          {avatar_html(rx_emp_name, 48, rx_bc)}
+          <div style="flex:1">
+            <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1rem;color:#0B2540">{rx_emp_name}</div>
+            <div style="font-size:0.8rem;color:#64748B">{rx_emp['Current Job Title']} · Grade {int(rx_emp['Job Grade (1-9)'])} · {rx_emp['Department']}</div>
+          </div>
+          <div style="text-align:center;min-width:90px">
+            <div style="font-family:'Syne',sans-serif;font-size:2rem;font-weight:800;color:{rx_bc};line-height:1">{rx_lps:.1f}</div>
+            <div style="font-size:0.72rem;color:#64748B">LPS / 100</div>
+            <span class="band-pill" style="background:{rx_bc}20;color:{rx_bc};font-size:0.7rem">{BAND_SHORT.get(rx_emp['LPS Band'],rx_emp['LPS Band'])}</span>
+          </div>
+        </div>""", unsafe_allow_html=True)
+
+    st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
+
+    # ── Identify weakest clusters + KF dimensions ──────────────────────────────
+    clusters = {
+        "Performance":       safe_float(rx_emp.get("C1", 0)),
+        "KF Assessment":     safe_float(rx_emp.get("C2", 0)),
+        "Career Velocity":   safe_float(rx_emp.get("C3", 0)),
+        "Leadership Breadth":safe_float(rx_emp.get("C4", 0)),
+        "Readiness":         safe_float(rx_emp.get("C5", 0)),
+    }
+    kf_dims_scores = {}
+    for dim, col in [
+        ("KF KFALP — Drivers",          "KF KFALP - Drivers Score (1-5)"),
+        ("KF KFALP — Curiosity",        "KF KFALP - Curiosity Score (1-5)"),
+        ("KF KFALP — Insight",          "KF KFALP - Insight Score (1-5)"),
+        ("KF KFALP — Engagement",       "KF KFALP - Engagement Score (1-5)"),
+        ("KF KFALP — Determination",    "KF KFALP - Determination Score (1-5)"),
+        ("KF KFALP — Learnability",     "KF KFALP - Learnability Score (1-5)"),
+        ("KF viaEdge — Mental Agility", "KF viaEdge - Mental Agility Score (1-5)"),
+        ("KF viaEdge — People Agility", "KF viaEdge - People Agility Score (1-5)"),
+        ("KF viaEdge — Change Agility", "KF viaEdge - Change Agility Score (1-5)"),
+        ("KF viaEdge — Results Agility","KF viaEdge - Results Agility Score (1-5)"),
+        ("KF viaEdge — Self-Awareness", "KF viaEdge - Self-Awareness Score (1-5)"),
+    ]:
+        val = safe_float(rx_emp.get(col, 0))
+        if val > 0:
+            kf_dims_scores[dim] = val
+
+    sorted_clusters = sorted(clusters.items(), key=lambda x: x[1])
+    sorted_kf = sorted(kf_dims_scores.items(), key=lambda x: x[1]) if kf_dims_scores else []
+
+    # Weakest 2 clusters + weakest 3 KF dims
+    weak_clusters = [c for c, _ in sorted_clusters[:2]]
+    weak_kf_dims  = [d for d, _ in sorted_kf[:3]]
+
+    # ── Prescription header ────────────────────────────────────────────────────
+    st.markdown(f"""
+    <div style="background:linear-gradient(135deg,#0B2540 0%,#0D7377 100%);
+         border-radius:12px;padding:16px 22px;margin-bottom:16px;color:white">
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.05rem;margin-bottom:6px">
+        Development Prescription for {rx_emp_name}
+      </div>
+      <div style="font-size:0.82rem;color:#9EC5D8">
+        Based on LPS cluster gaps and KF assessment scores, the following interventions are prioritised
+        to move this employee toward the next LPS band.
+        Weakest clusters: <b style="color:#F0C93A">{' · '.join(weak_clusters)}</b>
+        {'· Weakest KF dimensions: <b style="color:#C9A227">' + ' · '.join(weak_kf_dims) + '</b>' if weak_kf_dims else ''}
+      </div>
+    </div>""", unsafe_allow_html=True)
+
+    # ── Prescription cards ─────────────────────────────────────────────────────
+    priority_areas = weak_clusters + weak_kf_dims
+    for idx_area, area in enumerate(priority_areas):
+        if area not in INTERVENTION_LIBRARY:
+            continue
+        lib = INTERVENTION_LIBRARY[area]
+        courses = lib["courses"]
+
+        with st.expander(f"📌 {area} — {lib['description']}", expanded=(idx_area < 2)):
+            for c in courses:
+                type_clr = TYPE_COLORS.get(c["type"], "#64748B")
+                st.markdown(f"""
+                <div style="display:flex;gap:14px;align-items:flex-start;
+                     padding:12px 14px;border-radius:10px;background:#F8FBFD;
+                     border:1px solid #E2EAF0;margin-bottom:8px">
+                  <div style="min-width:120px;max-width:140px">
+                    <span style="background:{type_clr};color:white;border-radius:6px;
+                      padding:3px 8px;font-size:0.68rem;font-weight:700;
+                      font-family:'Syne',sans-serif;display:block;text-align:center;margin-bottom:4px">{c['type']}</span>
+                    <div style="font-size:0.72rem;color:#64748B;text-align:center">⏱ {c['duration']}</div>
+                    <div style="font-size:0.72rem;color:#64748B;text-align:center">{c['mode']}</div>
+                  </div>
+                  <div style="flex:1">
+                    <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:0.9rem;
+                         color:#0B2540;margin-bottom:2px">{c['name']}</div>
+                    <div style="font-size:0.78rem;color:#0D7377;font-weight:600">{c['provider']}</div>
+                  </div>
+                </div>""", unsafe_allow_html=True)
+
+    # ── LPS projection chart ───────────────────────────────────────────────────
+    st.markdown('<div class="sec-hdr" style="margin-top:16px">📈 Estimated LPS Impact per Intervention Area</div>',
+                unsafe_allow_html=True)
+
+    cluster_labels = list(clusters.keys())
+    current_scores = [clusters[c] for c in cluster_labels]
+    # Estimated uplift after completing recommended courses (illustrative)
+    uplift = {c: min(100, v + (15 if c in weak_clusters else 5)) for c, v in clusters.items()}
+    uplift_scores = [uplift[c] for c in cluster_labels]
+
+    fig_rx = go.Figure()
+    fig_rx.add_trace(go.Bar(name="Current Score", x=cluster_labels, y=current_scores,
+                             marker_color="#94A3B8", text=[f"{v:.0f}" for v in current_scores],
+                             textposition="outside", textfont=dict(size=10)))
+    fig_rx.add_trace(go.Bar(name="After Interventions (Est.)", x=cluster_labels, y=uplift_scores,
+                             marker_color="#0D7377", text=[f"{v:.0f}" for v in uplift_scores],
+                             textposition="outside", textfont=dict(size=10)))
+    fig_rx.update_layout(
+        barmode="group",
+        xaxis=dict(tickfont=dict(family="DM Sans",size=10)),
+        yaxis=dict(range=[0,115], tickfont=dict(size=9), title="Score (0–100)"),
+        legend=dict(font=dict(family="DM Sans",size=10),orientation="h",x=0.5,xanchor="center",y=1.08),
+        margin=dict(l=0,r=0,t=30,b=0), height=280,
+        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+    )
+    st.plotly_chart(fig_rx, use_container_width=True, config={"displayModeBar":False}, key="pc_rx_bar")
+
+    # ── Full intervention catalogue ────────────────────────────────────────────
+    st.markdown('<div class="sec-hdr" style="margin-top:16px">📚 Full Intervention Catalogue</div>',
+                unsafe_allow_html=True)
+    all_rows = []
+    for area, lib in INTERVENTION_LIBRARY.items():
+        for c in lib["courses"]:
+            all_rows.append({"Development Area": area, "Course / Intervention": c["name"],
+                             "Type": c["type"], "Duration": c["duration"],
+                             "Provider": c["provider"], "Mode": c["mode"]})
+    df_catalogue = pd.DataFrame(all_rows)
+    area_filter = st.multiselect("Filter by Area", sorted(df_catalogue["Development Area"].unique()),
+                                  default=[], key="rx_area_filter",
+                                  placeholder="Select areas (blank = show all)")
+    show_df = df_catalogue[df_catalogue["Development Area"].isin(area_filter)]               if area_filter else df_catalogue
+    st.dataframe(show_df, use_container_width=True, hide_index=True, height=350)
+
+    # Download catalogue
+    st.download_button("⬇ Download Full Intervention Catalogue",
+                       data=df_catalogue.to_csv(index=False).encode("utf-8"),
+                       file_name="development_intervention_catalogue.csv",
+                       mime="text/csv", key="dl_catalogue")
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# TAB 9 — DATA TEMPLATES
+# ═══════════════════════════════════════════════════════════════════════════
+with tab9:
+    st.markdown('<div class="sec-hdr">📋 Download Blank Data Templates</div>',
+                unsafe_allow_html=True)
+
+    st.markdown("""
+    <div style="background:#EBF4F8;border-left:4px solid #0D7377;border-radius:8px;
+         padding:14px 18px;margin-bottom:18px;font-size:0.85rem;color:#374151">
+      <b>Instructions:</b> Download each CSV template below, fill in your organisation's data
+      following the column descriptions, and upload the completed files via the sidebar.
+      Column names and data types must match exactly — do not rename headers.
+    </div>
+    """, unsafe_allow_html=True)
+
+    # ── Template definitions ───────────────────────────────────────────────────
+    TEMPLATES = {
+        "employees_master.csv": {
+            "description": "Main employee dataset — one row per employee. Required to activate the engine.",
+            "color": "#0B2540",
+            "columns": [
+                ("EE Number",                               "Text",    "Unique employee ID. Must start with LTM followed by 6 digits. E.g. LTM001234"),
+                ("Employee Full Name",                      "Text",    "Full name of employee"),
+                ("Gender",                                  "Text",    "Male / Female / Non-Binary"),
+                ("Age",                                     "Integer", "Age in years (24–63)"),
+                ("Education Level",                         "Text",    "Bachelor's Degree / Post Graduate Diploma / Master's Degree / MBA / PhD"),
+                ("Field of Study",                          "Text",    "E.g. Finance & Accounting, Computer Science, Human Resources Management"),
+                ("Current Job Title",                       "Text",    "Exact job title as per org structure"),
+                ("Job Grade (1-9)",                         "Integer", "Job band / grade level (1 = most junior, 9 = C-Suite)"),
+                ("Department",                              "Text",    "Functional department name"),
+                ("Business Unit",                           "Text",    "Business unit or geography"),
+                ("Work Location",                           "Text",    "City / Country"),
+                ("Direct Line Manager EE Number",           "Text",    "EE Number of direct line manager. Use N/A for top of hierarchy"),
+                ("Number of Direct Reports",                "Integer", "Count of direct reports"),
+                ("Tenure with Organisation (Years)",        "Float",   "Total years with the organisation (e.g. 7.5)"),
+                ("Years in Current Role",                   "Float",   "Years in the current position"),
+                ("Career Start Year",                       "Integer", "Year the employee started their career"),
+                ("Career Start Age",                        "Integer", "Age at which career started (21–23)"),
+                ("Total Promotions (Career)",               "Integer", "Total promotions over career. Must be <= Grade - 1"),
+                ("Promotions in Last 5 Years",              "Integer", "Promotions received in last 5 years"),
+                ("Lateral / Cross-Functional Moves",        "Integer", "Number of lateral role changes"),
+                ("Total Internal Role Changes",             "Integer", "Total promotions + lateral moves"),
+                ("Average Tenure per Role (Years)",         "Float",   "Tenure divided by total role changes + 1"),
+                ("Highest Job Grade Achieved",              "Integer", "Peak grade level ever held (1–9)"),
+                ("Annual CTC (Normalised 0-1)",             "Float",   "Salary normalised to 0–1 scale across all employees"),
+                ("Last Annual Performance Rating (1-5)",    "Float",   "Most recent annual rating (1.0–5.0)"),
+                ("Average Performance Rating - Last 3 Years (1-5)", "Float", "Mean of last 3 performance ratings"),
+                ("Performance Trajectory",                  "Float",   "Last rating minus 3yr average (positive = improving)"),
+                ("Potential Rating (1=Low 2=Moderate 3=High)", "Integer", "HR-assessed potential: 1, 2, or 3"),
+                ("Potential Rating Label",                  "Text",    "Low Potential / Moderate Potential / High Potential"),
+                ("9-Box Position",                          "Text",    "E.g. 'High Performer / High Potential'"),
+                ("Flight Risk",                             "Text",    "Low / Medium / High"),
+                ("On Active Retention Plan",                "Boolean", "True / False"),
+                ("Mobility / Relocation Willingness (1-5)", "Integer", "1 = unwilling, 5 = highly willing"),
+                ("Cross-Functional Experience",             "Boolean", "True / False"),
+                ("International / Multi-Geography Experience","Boolean","True / False"),
+                ("Certified Mentor or Coach",               "Boolean", "True / False"),
+                ("Number of Critical Projects Led",         "Integer", "Count of strategic / critical projects led"),
+                ("External Industry Recognition Count",     "Integer", "Awards, speaking invitations, publications"),
+                ("Number of Business Languages Spoken",     "Integer", "Count of business languages"),
+                ("Business Languages",                      "Text",    "Semicolon-separated list e.g. English; Hindi; French"),
+                ("KF KFALP - Drivers Score (1-5)",          "Float",   "KFALP Drivers dimension score (1.0–5.0). Leave blank if not assessed"),
+                ("KF KFALP - Curiosity Score (1-5)",        "Float",   "KFALP Curiosity dimension score"),
+                ("KF KFALP - Insight Score (1-5)",          "Float",   "KFALP Insight dimension score"),
+                ("KF KFALP - Engagement Score (1-5)",       "Float",   "KFALP Engagement dimension score"),
+                ("KF KFALP - Determination Score (1-5)",    "Float",   "KFALP Determination dimension score"),
+                ("KF KFALP - Learnability Score (1-5)",     "Float",   "KFALP Learnability dimension score"),
+                ("KF KFALP - Composite Score (1-5)",        "Float",   "Weighted average of all 6 KFALP dimensions"),
+                ("KF viaEdge - Mental Agility Score (1-5)", "Float",   "viaEdge Mental Agility score"),
+                ("KF viaEdge - People Agility Score (1-5)", "Float",   "viaEdge People Agility score"),
+                ("KF viaEdge - Change Agility Score (1-5)", "Float",   "viaEdge Change Agility score"),
+                ("KF viaEdge - Results Agility Score (1-5)","Float",   "viaEdge Results Agility score"),
+                ("KF viaEdge - Self-Awareness Score (1-5)", "Float",   "viaEdge Self-Awareness score"),
+                ("KF viaEdge - Learning Agility Composite (1-5)","Float","Weighted average of all 5 viaEdge dimensions"),
+                ("KF viaEdge - Learning Agility Percentile","Integer", "Normed percentile rank vs global benchmark (1–100)"),
+                ("KF Blended Assessment Composite (1-5)",   "Float",   "KFALP composite x 0.55 + viaEdge composite x 0.45"),
+                ("Promotions per Year (Career)",            "Float",   "Total promotions / tenure years"),
+                ("Promotions per Year (Last 5 Years)",      "Float",   "Promotions in last 5 yrs / 5"),
+            ]
+        },
+        "promotion_history.csv": {
+            "description": "One row per promotion event per employee.",
+            "color": "#0D7377",
+            "columns": [
+                ("EE Number",                              "Text",    "Employee EE Number — must match employees_master"),
+                ("Employee Full Name",                     "Text",    "Employee full name"),
+                ("Promotion Number (Career)",              "Integer", "Sequential promotion count (1, 2, 3...)"),
+                ("Promotion Year",                         "Integer", "Calendar year of promotion (e.g. 2019)"),
+                ("Promoted From Grade",                    "Integer", "Grade before promotion (1–9)"),
+                ("Promoted From Title Band",               "Text",    "Title band before promotion"),
+                ("Promoted To Grade",                      "Integer", "Grade after promotion (1–9). Must be > From Grade"),
+                ("Promoted To Title Band",                 "Text",    "Title band after promotion"),
+                ("Performance Rating at Promotion",        "Float",   "Performance rating in the year of promotion (1.0–5.0)"),
+                ("Years Since Last Promotion",             "Float",   "Years elapsed since previous promotion"),
+                ("Department at Time of Promotion",        "Text",    "Department at time of promotion"),
+                ("Is Most Recent Promotion",               "Boolean", "True for the employee's latest promotion, False otherwise"),
+            ]
+        },
+        "kf_kfalp_detail.csv": {
+            "description": "One row per employee per KFALP dimension (6 rows per assessed employee).",
+            "color": "#C9A227",
+            "columns": [
+                ("EE Number",                  "Text",    "Employee EE Number"),
+                ("Employee Full Name",         "Text",    "Employee full name"),
+                ("Current Job Title",          "Text",    "Employee's current job title"),
+                ("KF KFALP Dimension",         "Text",    "One of: Drivers / Curiosity / Insight / Engagement / Determination / Learnability"),
+                ("Raw Score (1-5)",            "Float",   "Raw dimension score (1.00–5.00)"),
+                ("Rounded Score (1-5)",        "Integer", "Score rounded to nearest integer (1–5)"),
+                ("KFALP Rating Band",          "Text",    "Limited / Developing / Effective / Strong / Exceptional"),
+                ("KF KFALP Composite Score (1-5)","Float","Overall KFALP composite for this employee"),
+                ("Behavioural Descriptor",     "Text",    "Full behavioural descriptor text for this score and dimension"),
+            ]
+        },
+        "kf_viaedge_detail.csv": {
+            "description": "One row per employee per viaEdge dimension (5 rows per assessed employee).",
+            "color": "#7C3AED",
+            "columns": [
+                ("EE Number",                              "Text",    "Employee EE Number"),
+                ("Employee Full Name",                     "Text",    "Employee full name"),
+                ("Current Job Title",                      "Text",    "Employee's current job title"),
+                ("KF viaEdge Dimension",                   "Text",    "One of: Mental Agility / People Agility / Change Agility / Results Agility / Self-Awareness"),
+                ("Raw Score (1-5)",                        "Float",   "Raw dimension score"),
+                ("Rounded Score (1-5)",                    "Integer", "Score rounded to integer"),
+                ("viaEdge Rating Band",                    "Text",    "Needs Development / Emerging / Developing / Advanced / Expert"),
+                ("KF viaEdge Learning Agility Composite (1-5)","Float","Overall viaEdge composite"),
+                ("KF viaEdge Learning Agility Percentile","Integer", "Percentile vs global benchmark"),
+                ("viaEdge Percentile Band",                "Text",    "E.g. 75th-89th Percentile"),
+                ("Behavioural Descriptor",                 "Text",    "Full behavioural descriptor"),
+            ]
+        },
+        "kf_attribute_reference.csv": {
+            "description": "Reference guide — all KF dimensions across all 5 rating bands.",
+            "color": "#1B7A3E",
+            "columns": [
+                ("KF Instrument",         "Text", "KFALP or viaEdge full name"),
+                ("Dimension",             "Text", "Dimension name"),
+                ("Category",              "Text", "Category e.g. Motivation, Resilience"),
+                ("Sub-Dimensions",        "Text", "Semicolon-separated sub-dimensions"),
+                ("What It Measures",      "Text", "Definition of what the dimension measures"),
+                ("High Potential Signal",  "Text", "Behavioural indicators for high scorers"),
+                ("Development Focus",     "Text", "Recommended development approach"),
+                ("Assessment Method",     "Text", "How this dimension is assessed"),
+                ("Rating Band",           "Text", "The rating band name"),
+                ("Score",                 "Integer","Numeric score (1–5)"),
+                ("Behavioural Descriptor","Text", "Full behavioural descriptor for this band"),
+            ]
+        },
+        "org_structure.csv": {
+            "description": "Hierarchy for the interactive org chart — one row per role/node.",
+            "color": "#EA580C",
+            "columns": [
+                ("Node ID",             "Text",    "Unique node identifier — typically the job title"),
+                ("Parent Node ID",      "Text",    "Node ID of the parent role. Leave blank for root (CEO)"),
+                ("Job Title",           "Text",    "Full job title for this node"),
+                ("Department",          "Text",    "Department name"),
+                ("Business Unit",       "Text",    "Business unit"),
+                ("Job Grade (1-9)",     "Integer", "Grade level of this role"),
+                ("Representative EE",  "Text",    "EE Number of the person holding this role"),
+                ("Representative Name","Text",    "Name of the person holding this role"),
+                ("Org Level",           "Integer", "Hierarchy depth (1 = CEO, 2 = direct reports, etc.)"),
+                ("LPS (Representative)","Float",  "LPS score of the representative person"),
+                ("Is Critical Role",    "Boolean", "True if this role is a critical succession role"),
+            ]
+        },
+    }
+
+    # ── Render template cards ──────────────────────────────────────────────────
+    for fname, tmpl in TEMPLATES.items():
+        with st.expander(f"📄 {fname}  —  {tmpl['description']}", expanded=True):
+            # Build blank template dataframe (headers only)
+            cols_only = [col for col, _, _ in tmpl["columns"]]
+            blank_df  = pd.DataFrame(columns=cols_only)
+
+            tc1, tc2 = st.columns([1, 2.5])
+            with tc1:
+                st.markdown(f"""
+                <div style="background:{tmpl['color']};color:white;border-radius:10px;
+                     padding:14px 16px;margin-bottom:8px">
+                  <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:0.9rem">{fname}</div>
+                  <div style="font-size:0.78rem;color:rgba(255,255,255,0.75);margin-top:4px">{len(cols_only)} columns required</div>
+                </div>""", unsafe_allow_html=True)
+                st.download_button(
+                    label=f"⬇ Download blank {fname}",
+                    data=blank_df.to_csv(index=False).encode("utf-8"),
+                    file_name=fname,
+                    mime="text/csv",
+                    use_container_width=True,
+                    key=f"dl_{fname}"
+                )
+            with tc2:
+                col_df = pd.DataFrame(tmpl["columns"], columns=["Column Name","Data Type","Description / Rules"])
+                st.dataframe(col_df, use_container_width=True, hide_index=True, height=220)
+
+    # ── Global validation rules card ──────────────────────────────────────────
+    st.markdown('<div class="sec-hdr" style="margin-top:18px">✅ Data Quality Rules</div>',
+                unsafe_allow_html=True)
+    rules = [
+        ("EE Numbers",         "Must start with LTM followed by 6 digits. Must be unique across all employees."),
+        ("Age vs Tenure",      "Age minus Tenure must equal Career Start Age, which must be between 21 and 23."),
+        ("Promotions vs Grade","Total Promotions must always be <= Job Grade - 1."),
+        ("KF Scores",          "All KF scores on 1–5 scale. Leave blank (not 0) if employee has not been assessed."),
+        ("9-Box Format",       "Must follow exact pattern: '[Perf Label] / [Potential Label]' e.g. 'High Performer / High Potential'"),
+        ("Boolean columns",    "Use True or False exactly (case-sensitive)."),
+        ("File names",         "File names must match exactly as shown above — the app matches by file name."),
+        ("Encoding",           "Save all files as UTF-8 CSV. Do not use special characters in column headers."),
+    ]
+    rules_html = "".join(
+        f"<div style='display:flex;gap:12px;padding:8px 0;border-bottom:1px solid #E2EAF0'>"
+        f"<div style='min-width:170px;font-weight:600;color:#0B2540;font-size:0.82rem'>{r}</div>"
+        f"<div style='font-size:0.82rem;color:#374151'>{d}</div></div>"
+        for r, d in rules
+    )
+    st.markdown(f'<div class="card">{rules_html}</div>', unsafe_allow_html=True)
