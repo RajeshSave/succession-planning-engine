@@ -498,8 +498,25 @@ html,body,[class*="css"]{font-family:'DM Sans',sans-serif!important;background-c
 .band-pill{display:inline-block;border-radius:20px;padding:3px 10px;font-size:0.72rem;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-left:8px;vertical-align:middle;}
 .sec-hdr{font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:800;color:var(--navy);border-bottom:2px solid var(--teal);padding-bottom:6px;margin-bottom:14px;}
 section[data-testid="stSidebar"]{background:var(--navy)!important;border-right:none!important;}
-section[data-testid="stSidebar"] *{color:#C8DDE8!important;}
+/* Target sidebar content but NOT the collapse toggle button */
+section[data-testid="stSidebar"] .stMarkdown,
+section[data-testid="stSidebar"] .stMarkdown *,
+section[data-testid="stSidebar"] label,
+section[data-testid="stSidebar"] p,
+section[data-testid="stSidebar"] span:not([data-testid="collapsedControl"]),
+section[data-testid="stSidebar"] div.stSelectbox label,
+section[data-testid="stSidebar"] div.stSlider label,
+section[data-testid="stSidebar"] div.stFileUploader label,
+section[data-testid="stSidebar"] div.stCheckbox label
+  {color:#C8DDE8!important;}
 section[data-testid="stSidebar"] h2{font-family:'Syne',sans-serif!important;color:white!important;font-size:1rem!important;}
+/* Ensure collapse/expand chevron button stays visible */
+[data-testid="collapsedControl"]{
+  display:flex!important;visibility:visible!important;opacity:1!important;
+  background:rgba(255,255,255,0.12)!important;border-radius:0 8px 8px 0!important;
+}
+[data-testid="collapsedControl"] svg{color:#FFFFFF!important;fill:#FFFFFF!important;}
+button[kind="headerNoPadding"]{display:flex!important;visibility:visible!important;}
 .upload-hint{font-size:0.78rem;color:#7A9AB8;text-align:center;padding:8px;border:1px dashed #3A5A78;border-radius:8px;margin-bottom:8px;}
 .dept-badge{display:inline-block;background:#EBF4F8;color:#0B2540;border-radius:6px;padding:2px 8px;font-size:0.72rem;font-weight:600;margin-top:4px;}
 </style>
@@ -587,9 +604,10 @@ VE_LBLS  = ["Mental Agility","People Agility","Change Agility","Results Agility"
 # ═════════════════════════════════════════════════════════════════════════════
 # TABS
 # ═════════════════════════════════════════════════════════════════════════════
-tab1,tab2,tab3,tab4,tab5,tab6,tab7 = st.tabs([
+tab1,tab2,tab3,tab4,tab5,tab6,tab7,tab8,tab9 = st.tabs([
     "🏆 Succession Pipeline","👤 Employee Profile","⚖️ Compare Employees",
     "🌐 Org Chart","📊 Org Readiness","🧠 KF Assessment","📈 Career Path",
+    "💊 Development Rx","📋 Data Templates",
 ])
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -987,19 +1005,39 @@ with tab4:
             nh_.append(f"<b>{node}</b><br>Grade: {g}<br>LPS: {_lps}{' ★ Critical' if is_cr else ''}")
 
         fig_org=go.Figure()
+        # Edge lines
         fig_org.add_trace(go.Scatter(x=ex,y=ey,mode="lines",
                                       line=dict(width=1.2,color="#CBD5E1"),hoverinfo="none"))
-        fig_org.add_trace(go.Scatter(x=nx_,y=ny_,mode="markers+text",
+        # Node markers only (no text on nodes — avoids overlapping)
+        fig_org.add_trace(go.Scatter(x=nx_,y=ny_,mode="markers",
                                       marker=dict(size=ns_,color=nc_,line=dict(width=2,color="white")),
-                                      text=nt_,textposition="bottom center",
-                                      textfont=dict(family="DM Sans",size=8,color="#1A2535"),
-                                      hovertext=nh_,hoverinfo="text"))
+                                      hovertext=nh_,hoverinfo="text",
+                                      hoverlabel=dict(bgcolor="white",font_size=11,
+                                                      font_family="DM Sans",bordercolor="#D1DCE8")))
+        # Selective annotations: only label grade 7+ nodes to avoid clutter
+        for node in G.nodes():
+            if node not in pos: continue
+            nd  = G.nodes[node]
+            g   = nd.get("grade",5)
+            if g < 7: continue          # skip lower grades — too many, would overlap
+            x,y = pos[node]
+            short = node[:22]+("…" if len(node)>22 else "")
+            fig_org.add_annotation(
+                x=x, y=y-0.22,
+                text=f"<b>{short}</b>",
+                showarrow=False,
+                font=dict(family="DM Sans",size=8,color="#1A2535"),
+                xanchor="center",yanchor="top",
+                bgcolor="rgba(255,255,255,0.82)",
+                bordercolor="#D1DCE8",borderwidth=1,borderpad=2,
+            )
         fig_org.update_layout(showlegend=False,
                                xaxis=dict(showgrid=False,zeroline=False,showticklabels=False),
                                yaxis=dict(showgrid=False,zeroline=False,showticklabels=False),
-                               margin=dict(l=20,r=20,t=20,b=20),height=560,
+                               margin=dict(l=20,r=20,t=20,b=20),height=600,
                                paper_bgcolor="white",plot_bgcolor="white",
-                               hoverlabel=dict(bgcolor="white",font_size=11,font_family="DM Sans",bordercolor="#D1DCE8"))
+                               hoverlabel=dict(bgcolor="white",font_size=11,
+                                               font_family="DM Sans",bordercolor="#D1DCE8"))
         st.plotly_chart(fig_org, use_container_width=True, config={"displayModeBar":True}, key="pc_013")
         leg_cols=st.columns(len(grade_colors))
         for i,(g,c) in enumerate(sorted(grade_colors.items(),reverse=True)):
@@ -1238,41 +1276,3 @@ with tab7:
                                 colorbar=dict(title="Perf",tickfont=dict(size=8),len=0.5,y=0.5)),
                     text=[f"G{g}" for g in grades],textposition="top center",
                     textfont=dict(family="Syne",size=10,color="#0B2540"),name="Grade"))
-                fig_tl.add_trace(go.Scatter(x=years,y=perfs,mode="lines+markers",
-                    line=dict(color="#C9A227",width=2,dash="dot"),marker=dict(size=8,color="#C9A227"),
-                    name="Performance",yaxis="y2"))
-                entry_yr=emp_promos["Promotion Year"].min()-2
-                entry_gr=emp_promos["Promoted From Grade"].iloc[0]
-                fig_tl.add_trace(go.Scatter(x=[entry_yr],y=[entry_gr],mode="markers+text",
-                    marker=dict(size=12,color="#64748B",symbol="square"),
-                    text=["Entry"],textposition="top center",textfont=dict(family="Syne",size=9,color="#64748B"),
-                    name="Career Entry",hoverinfo="skip"))
-                emp_row=df_emp[df_emp["Employee Full Name"]==sel_cp]
-                if len(emp_row)>0:
-                    fig_tl.add_trace(go.Scatter(x=[2025],y=[int(emp_row.iloc[0]["Job Grade (1-9)"])],
-                        mode="markers+text",marker=dict(size=14,color=lps_color(emp_row.iloc[0]["LPS"]),symbol="star"),
-                        text=["Now"],textposition="top center",textfont=dict(family="Syne",size=10,color="#0B2540"),
-                        name="Current",hoverinfo="skip"))
-                fig_tl.update_layout(
-                    xaxis=dict(title="Year",tickfont=dict(family="DM Sans",size=10)),
-                    yaxis=dict(title="Job Grade",range=[0,10],tickvals=list(range(1,10)),tickfont=dict(family="DM Sans",size=10)),
-                    yaxis2=dict(title="Performance",overlaying="y",side="right",range=[0,5.5],tickfont=dict(size=9)),
-                    legend=dict(font=dict(family="DM Sans",size=9),orientation="h",x=0.5,xanchor="center",y=1.06),
-                    margin=dict(l=0,r=60,t=30,b=0),height=320,
-                    paper_bgcolor="rgba(0,0,0,0)",plot_bgcolor="#F8FBFD",hovermode="x unified")
-                st.plotly_chart(fig_tl,use_container_width=True,config={"displayModeBar":False}, key="pc_025")
-                disp_cols=[c for c in ["Promotion Number (Career)","Promotion Year","Promoted From Grade","Promoted To Grade","Performance Rating at Promotion","Years Since Last Promotion"] if c in emp_promos.columns]
-                st.markdown('<div class="sec-hdr" style="margin-top:8px">📋 Promotion History</div>',unsafe_allow_html=True)
-                st.dataframe(emp_promos[disp_cols].reset_index(drop=True),use_container_width=True,hide_index=True)
-
-        st.markdown('<div class="sec-hdr" style="margin-top:16px">🚀 Promotion Velocity vs Performance</div>',unsafe_allow_html=True)
-        vel_df=df_emp[["Job Grade (1-9)","Promotions per Year (Career)","Average Performance Rating - Last 3 Years (1-5)"]].dropna()
-        fig_vel=px.scatter(vel_df,x="Average Performance Rating - Last 3 Years (1-5)",y="Promotions per Year (Career)",
-                            color="Job Grade (1-9)",color_continuous_scale=px.colors.sequential.Teal,opacity=0.7,size_max=8,
-                            labels={"Average Performance Rating - Last 3 Years (1-5)":"Avg Performance (3yr)",
-                                    "Promotions per Year (Career)":"Promotions / Year","Job Grade (1-9)":"Grade"},
-                            title="Performance vs Promotion Velocity (coloured by Grade)")
-        fig_vel.update_layout(margin=dict(l=0,r=0,t=30,b=0),height=320,
-                               paper_bgcolor="rgba(0,0,0,0)",plot_bgcolor="#F8FBFD",
-                               title_font=dict(family="Syne",size=12))
-        st.plotly_chart(fig_vel,use_container_width=True,config={"displayModeBar":False}, key="pc_026")
